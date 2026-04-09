@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>⚡ SwapX</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0d0d; color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex; justify-content: center; align-items: center; min-height: 100vh;
+    }
+    .card {
+      background: #161616; border: 1px solid #2a2a2a;
+      border-radius: 20px; padding: 28px 24px; width: 100%; max-width: 420px;
+    }
+    h1 { text-align: center; font-size: 1.6rem; color: #f97316; margin-bottom: 16px; }
+
+    /* wallet bar */
+    .wallet-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      background: #1e1e1e; border: 1px solid #2a2a2a;
+      border-radius: 10px; padding: 8px 12px; margin-bottom: 14px; font-size: 0.82rem;
+    }
+    .wallet-bar .addr { color: #22c55e; }
+    .wallet-bar .addr.dim { color: #888; }
+    .wallet-bar button {
+      background: none; border: 1px solid #444; color: #aaa;
+      padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem;
+    }
+    .wallet-bar button:hover { border-color: #f97316; color: #f97316; }
+
+    /* wallet picker modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 100;
+      justify-content: center; align-items: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #1a1a1a; border: 1px solid #333; border-radius: 16px;
+      padding: 24px; width: 300px;
+    }
+    .modal h3 { color: #f97316; margin-bottom: 16px; font-size: 1rem; text-align: center; }
+    .wallet-option {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border: 1px solid #2a2a2a; border-radius: 10px;
+      cursor: pointer; margin-bottom: 10px; transition: border-color 0.2s;
+    }
+    .wallet-option:hover { border-color: #f97316; }
+    .wallet-option .name { font-size: 0.9rem; color: #fff; }
+    .wallet-option .sub { font-size: 0.72rem; color: #666; }
+    .modal-close {
+      display: block; width: 100%; padding: 8px; margin-top: 6px;
+      background: none; border: 1px solid #333; color: #666;
+      border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+    }
+    .modal-close:hover { color: #aaa; }
+
+    label {
+      font-size: 0.75rem; color: #888; text-transform: uppercase;
+      letter-spacing: 0.08em; display: block; margin-bottom: 6px;
+    }
+    .token-row { display: flex; gap: 10px; margin-bottom: 6px; }
+    select {
+      background: #1e1e1e; border: 1px solid #333; color: #fff;
+      padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; flex: 1;
+    }
+    input[type="number"] {
+      background: #1e1e1e; border: 1px solid #333; color: #fff;
+      padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; flex: 2;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .balance-hint {
+      font-size: 0.72rem; color: #555; text-align: right; margin-bottom: 14px;
+    }
+    .balance-hint .bal-val { color: #f97316; }
+    .balance-hint .max-btn { color: #f97316; cursor: pointer; }
+    .balance-hint .max-btn:hover { text-decoration: underline; }
+
+    .swap-arrow {
+      text-align: center; font-size: 1.2rem; color: #f97316;
+      margin: 6px 0; cursor: pointer; user-select: none;
+    }
+    .swap-arrow:hover { color: #ea6d0f; }
+
+    .receive-box {
+      background: #1a1a1a; border: 1px solid #2a2a2a;
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;
+    }
+    .receive-box .amount {
+      font-size: 1.5rem; font-weight: 600; color: #f97316; margin-top: 8px;
+    }
+
+    .info-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.78rem; color: #666; margin-bottom: 6px;
+    }
+    .info-row span:last-child { color: #aaa; }
+    .gasless-badge {
+      background: #0f2e1a; color: #22c55e;
+      padding: 2px 8px; border-radius: 6px; font-size: 0.72rem;
+    }
+
+    #swap-btn {
+      width: 100%; padding: 14px; background: #f97316;
+      border: none; border-radius: 12px; color: #fff;
+      font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 10px;
+    }
+    #swap-btn:hover { background: #ea6d0f; }
+    #swap-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    #status-msg {
+      margin-top: 12px; text-align: center; font-size: 0.82rem;
+      padding: 8px 12px; border-radius: 8px; display: none;
+    }
+    #status-msg.success { background: #0f2e1a; color: #22c55e; display: block; }
+    #status-msg.error   { background: #2e0f0f; color: #f87171; display: block; }
+    #status-msg.loading { background: #1e1e1e; color: #888; display: block; }
+    .tx-link { color: #f97316; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<!-- wallet picker modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Choose Wallet</h3>
+    <div class="wallet-option" onclick="connectWallet('argent')">
+      <div>
+        <div class="name">Ready Wallet</div>
+<div class="sub">Formerly Argent X</div>
+      </div>
+    </div>
+    <div class="wallet-option" onclick="connectWallet('braavos')">
+      <div>
+        <div class="name">Braavos</div>
+        <div class="sub">Smart wallet for Starknet</div>
+      </div>
+    </div>
+    <button class="modal-close" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<div class="card">
+  <h1>⚡ SwapX</h1>
+
+  <!-- wallet bar -->
+  <div class="wallet-bar">
+    <span class="addr dim" id="wallet-addr">Not connected</span>
+    <button id="wallet-btn" onclick="handleWalletBtn()">Connect</button>
+  </div>
+
+  <label>You Pay</label>
+  <div class="token-row">
+    <select id="from-token">
+      <option value="STRK">STRK</option>
+      <option value="ETH">ETH</option>
+      <option value="USDC">USDC</option>
+      <option value="USDT">USDT</option>
+    </select>
+    <input type="number" id="amount-in" placeholder="0.00" min="0" step="any"/>
+  </div>
+  <div class="balance-hint">
+    Balance: <span class="bal-val" id="balance-display">—</span>
+    &nbsp;·&nbsp;<span class="max-btn" onclick="useMax()">MAX</span>
+  </div>
+
+  <div class="swap-arrow" onclick="flipTokens()">⇅</div>
+
+  <label>You Receive</label>
+  <div class="receive-box">
+    <select id="to-token">
+      <option value="ETH">ETH</option>
+      <option value="STRK">STRK</option>
+      <option value="USDC">USDC</option>
+      <option value="USDT">USDT</option>
+    </select>
+    <div class="amount" id="amount-out">0.000000</div>
+  </div>
+
+  <div class="info-row"><span>Rate</span><span id="rate-display">—</span></div>
+  <div class="info-row"><span>Price Impact</span><span id="impact-display">—</span></div>
+  <div class="info-row">
+    <span>Gas Fee</span>
+    <span class="gasless-badge">⚡ Paid in STRK</span>
+  </div>
+
+  <button id="swap-btn" disabled>SWAP</button>
+  <div id="status-msg"></div>
+</div>
+
+<script>
+// ── state ────────────────────────────────────────────────────────
+let walletAddress  = null;
+let walletProvider = null;
+let walletBalance  = 0;
+let quoteTimer     = null;
+
+const amountInput   = document.getElementById("amount-in");
+const fromSelect    = document.getElementById("from-token");
+const toSelect      = document.getElementById("to-token");
+const amountOut     = document.getElementById("amount-out");
+const rateDisplay   = document.getElementById("rate-display");
+const impactDisplay = document.getElementById("impact-display");
+const swapBtn       = document.getElementById("swap-btn");
+const statusMsg     = document.getElementById("status-msg");
+const walletAddr    = document.getElementById("wallet-addr");
+const walletBtn     = document.getElementById("wallet-btn");
+const balanceEl     = document.getElementById("balance-display");
+
+// ── wallet modal ─────────────────────────────────────────────────
+function handleWalletBtn() {
+  if (walletAddress) {
+    disconnectWallet();
+  } else {
+    document.getElementById("modal-overlay").classList.add("open");
+  }
+}
+
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("open");
+}
+
+async function connectWallet(type) {
+  closeModal();
+  try {
+    let provider;
+
+    if (type === "argent") {
+      provider = window.starknet_argentX || window.starknet;
+      if (!provider) throw new Error("Ready wallet not installed. Get it from ready.co");
+    } else if (type === "braavos") {
+      provider = window.starknet_braavos;
+      if (!provider) throw new Error("Braavos not installed. Get it from braavos.app");
+    }
+
+    await provider.enable({ starknetVersion: "v5" });
+
+    if (!provider.isConnected || !provider.selectedAddress) {
+      throw new Error("Wallet connection rejected");
+    }
+
+    walletAddress  = provider.selectedAddress;
+    walletProvider = provider;
+
+    walletAddr.textContent = `✅ ${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}`;
+    walletAddr.className   = "addr";
+    walletBtn.textContent  = "Disconnect";
+
+    await fetchBalance();
+    if (parseFloat(amountInput.value) > 0) triggerQuote();
+
+  } catch (err) {
+    showStatus(err.message, "error");
+  }
+}
+
+function disconnectWallet() {
+  walletAddress  = null;
+  walletProvider = null;
+  walletBalance  = 0;
+
+  walletAddr.textContent = "Not connected";
+  walletAddr.className   = "addr dim";
+  walletBtn.textContent  = "Connect";
+  balanceEl.textContent  = "—";
+  swapBtn.disabled       = true;
+  hideStatus();
+}
+
+// ── real balance fetch via token contract ────────────────────────
+const TOKEN_ADDRESSES = {
+  STRK: "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
+  ETH:  "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+  USDC: "0x053c91253bc9682c04929ca02ed00b3e423f6710d2ee7e0d5ebb06f3ecf368a8",
+  USDT: "0x068f5c6a61780768455de69077e07e89787839bf8166decfbf92b645209c0fb8",
+};
+
+const TOKEN_DECIMALS = { STRK: 18, ETH: 18, USDC: 6, USDT: 6 };
+
+async function fetchBalance() {
+  if (!walletAddress || !walletProvider) return;
+  const token = fromSelect.value;
+
+  try {
+    // call balanceOf on the token contract
+    const result = await walletProvider.provider.callContract({
+      contractAddress: TOKEN_ADDRESSES[token],
+      entrypoint: "balanceOf",
+      calldata: [walletAddress],
+    });
+
+    // result is [low, high] for uint256
+  const raw_result = result.result || result;
+const low  = BigInt(raw_result[0]);
+const high = BigInt(raw_result[1] || "0x0");
+
+    const dec  = TOKEN_DECIMALS[token];
+    const human = Number(raw * BigInt(1000000) / (BigInt(10) ** BigInt(dec))) / 1000000;
+    walletBalance = human;
+    balanceEl.textContent = human.toFixed(4) + " " + token;
+
+  } catch (err) {
+    balanceEl.textContent = "—";
+  }
+}
+
+// refresh balance when from token changes
+fromSelect.addEventListener("change", () => {
+  fetchBalance();
+  triggerQuote();
+});
+
+// ── flip tokens ───────────────────────────────────────────────────
+function flipTokens() {
+  const from = fromSelect.value;
+  fromSelect.value = toSelect.value;
+  toSelect.value   = from;
+  fetchBalance();
+  triggerQuote();
+}
+
+// ── quote ─────────────────────────────────────────────────────────
+function useMax() {
+  if (walletBalance > 0) {
+    // leave a tiny buffer for gas when paying with STRK
+    const safe = fromSelect.value === "STRK"
+      ? Math.max(0, walletBalance - 0.2).toFixed(6)
+      : walletBalance.toFixed(6);
+    amountInput.value = safe;
+    triggerQuote();
+  }
+}
+
+amountInput.addEventListener("input", () => {
+  if (parseFloat(amountInput.value) < 0) amountInput.value = 0;
+  triggerQuote();
+});
+
+toSelect.addEventListener("change", triggerQuote);
+
+function triggerQuote() {
+  clearTimeout(quoteTimer);
+  const amount = parseFloat(amountInput.value);
+
+  if (!amount || amount <= 0) {
+    resetQuoteDisplay();
+    return;
+  }
+
+  if (fromSelect.value === toSelect.value) {
+    showStatus("Select two different tokens", "error");
+    return;
+  }
+
+  amountOut.textContent = "...";
+  swapBtn.disabled = true;
+  quoteTimer = setTimeout(fetchQuote, 600);
+}
+
+async function fetchQuote() {
+  const amount = amountInput.value;
+  const from   = fromSelect.value;
+  const to     = toSelect.value;
+
+  try {
+    const res  = await fetch(`/quote?fromToken=${from}&toToken=${to}&amount=${amount}`);
+    const data = await res.json();
+
+    if (data.success) {
+      amountOut.textContent     = parseFloat(data.buyAmount).toFixed(6);
+      rateDisplay.textContent   = `1 ${from} = ${data.rate} ${to}`;
+      impactDisplay.textContent = data.priceImpact;
+      swapBtn.textContent       = `SWAP ${from} → ${to}`;
+      swapBtn.disabled          = !walletAddress;
+      hideStatus();
+    } else {
+      resetQuoteDisplay();
+      showStatus(data.error, "error");
+    }
+  } catch (err) {
+    resetQuoteDisplay();
+    showStatus("Can't reach server. Is node server.js running?", "error");
+  }
+}
+
+function resetQuoteDisplay() {
+  amountOut.textContent     = "0.000000";
+  rateDisplay.textContent   = "—";
+  impactDisplay.textContent = "—";
+  swapBtn.textContent       = "SWAP";
+  swapBtn.disabled          = true;
+}
+
+// ── swap ──────────────────────────────────────────────────────────
+swapBtn.onclick = async () => {
+  if (!walletAddress) { showStatus("Connect wallet first", "error"); return; }
+
+  swapBtn.disabled = true;
+  showStatus("Getting swap data...", "loading");
+
+  try {
+    const res  = await fetch("/swap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fromToken:     fromSelect.value,
+        toToken:       toSelect.value,
+        amount:        amountInput.value,
+        senderAddress: walletAddress,
+      }),
+    });
+
+    const data = await res.json();
+    if (!data.success) { showStatus(data.error, "error"); swapBtn.disabled = false; return; }
+
+    showStatus("Confirm in wallet...", "loading");
+
+    const result = await walletProvider.account.execute(data.calls);
+    const txHash = result?.transaction_hash ?? result?.transactionHash;
+
+    if (!txHash) {
+      showStatus("Swapped! Check wallet for transaction.", "success");
+    } else {
+      const url = `https://starkscan.co/tx/${txHash}`;
+      statusMsg.innerHTML = `✅ Done! <a class="tx-link" href="${url}" target="_blank">${txHash.slice(0,10)}...${txHash.slice(-6)}</a>`;
+      statusMsg.className = "success";
+      statusMsg.style.display = "block";
+    }
+
+    // reset form
+    amountInput.value = "";
+    resetQuoteDisplay();
+    await fetchBalance();
+
+  } catch (err) {
+    showStatus("Error: " + err.message, "error");
+  } finally {
+    swapBtn.disabled = false;
+  }
+};
+
+// ── helpers ───────────────────────────────────────────────────────
+function showStatus(msg, type) {
+  statusMsg.textContent    = msg;
+  statusMsg.className      = type;
+  statusMsg.style.display  = "block";
+}
+function hideStatus() {
+  statusMsg.style.display = "none";
+}
+</script>
+</body>
+</html>
