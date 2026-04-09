@@ -369,7 +369,7 @@ async function fetchQuote() {
   const to     = toSelect.value;
 
   try {
-    const res  = await fetch(`/quote?fromToken=${from}&toToken=${to}&amount=${amount}`);
+   const res = await fetch(`https://swapx-production.up.railway.app/quote?fromToken=${from}&toToken=${to}&amount=${amount}`);
     const data = await res.json();
 
     if (data.success) {
@@ -405,7 +405,7 @@ swapBtn.onclick = async () => {
   showStatus("Getting swap data...", "loading");
 
   try {
-    const res  = await fetch("/swap", {
+    const res = await fetch("https://swapx-production.up.railway.app/swap", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
