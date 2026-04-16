@@ -4,7 +4,7 @@ a clean, fast token swap interface built on Starknet. powered by AVNU.
 
 SwapX lets you swap STRK, ETH, USDC and USDT on Starknet directly from your browser.
 
-Connect your Argent X or Braavos wallet, enter an amount, and SwapX finds the best available rate through AVNU — Starknet's leading DEX aggregator — before sending the swap to your wallet for signing.
+Connect your Argent X or Braavos wallet, enter an amount, and SwapX finds the best available rate through AVNU — Starknet's leading DEX aggregator - before sending the swap to your wallet for signing.
 
 No seed phrases. No custodial accounts. Your wallet, your keys, your trade.
 
@@ -13,7 +13,7 @@ No seed phrases. No custodial accounts. Your wallet, your keys, your trade.
 
 
 What Is Starknet?
-Starknet is a Layer 2 network built on Ethereum. It uses zero-knowledge validity proofs to process thousands of transactions off-chain and verify them on Ethereum in a single proof — making transactions faster and cheaper than Ethereum mainnet while inheriting its security.
+Starknet is a Layer 2 network built on Ethereum. It uses zero-knowledge validity proofs to process thousands of transactions off-chain and verify them on Ethereum in a single proof, making transactions faster and cheaper than Ethereum mainnet while inheriting its security.
 
 Gas fees on Starknet are paid in STRK, not ETH. This means you never need ETH in your wallet to use SwapX.
 
