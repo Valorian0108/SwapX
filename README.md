@@ -10,15 +10,20 @@ No seed phrases. No custodial accounts. Your wallet, your keys, your trade.
 
 
 
-🌐 What Is Starknet?
+
+
+What Is Starknet?
 Starknet is a Layer 2 network built on Ethereum. It uses zero-knowledge validity proofs to process thousands of transactions off-chain and verify them on Ethereum in a single proof — making transactions faster and cheaper than Ethereum mainnet while inheriting its security.
 
 Gas fees on Starknet are paid in STRK, not ETH. This means you never need ETH in your wallet to use SwapX.
 
-🔄 What Is AVNU?
+
+What Is AVNU?
 AVNU is a decentralized exchange aggregator protocol on Starknet that routes your swap across all available liquidity sources to find the best rate. AVNU is the leading DEX aggregator and paymaster provider on Starknet, powering the entire ecosystem's spot trading experience.
 
 When you swap on SwapX, AVNU checks all available pools and routes your trade through the most efficient path — meaning you get the best rate without manually checking multiple exchanges.
+
+
 
 Features of SwapX
 Swap between STRK, ETH, USDC and USDT
@@ -30,6 +35,8 @@ Supports Argent X and Braavos wallets
 Disconnect and reconnect wallet anytime
 Live balance display for the token you're swapping
 Transaction hash with direct Starkscan explorer link after every swap
+
+
 
 
 How To Run Locally
@@ -45,11 +52,14 @@ Create a .env file in the root folder:
 Code
 ⚠️ Never share your private key or push it to GitHub. Add .env to your .gitignore.
 
-Start the server:
+
+
+To Start the server:
 Bash
-Open your browser at http://localhost:3000
-🔄 How To Swap
-Open http://localhost:3000
+Open your browser at https://swap-x-nine.vercel.app/
+
+🔄How To Swap
+Open https://swap-x-nine.vercel.app/
 Click Connect and choose Argent X or Braavos
 Select the token you want to swap from (You Pay)
 Select the token you want to receive (You Receive)
@@ -92,11 +102,14 @@ USDT
 USDC and USDT pairs may show "No route found" on Sepolia due to limited testnet liquidity. Both pairs work correctly on mainnet.
 
 
+
 How Gas Works
 Starknet uses account abstraction natively, meaning gas fees can be paid in STRK instead of ETH. SwapX shows "Paid in STRK" for gas — this means:
 You don't need ETH in your wallet at any point
 Gas is deducted in STRK on top of your swap amount
 Fees are typically a fraction of a cent worth of STRK
+
+
 
 How It Works Under The Hood
 1. Quote:
@@ -109,10 +122,11 @@ When you click Swap, SwapX calls AVNU's /swap/v2/build endpoint with your wallet
 SwapX passes the calldata to your wallet via account.execute(). Your wallet signs and broadcasts the transaction. The transaction hash is returned and linked to Starkscan.
 
 
+
 🧱 Built With
 Node.js + Express backend
 AVNU API for swap routing and best-rate quotes
 Starknet.js for wallet connection and transaction execution
 Vanilla JavaScript frontend — no frameworks, no dependencies
 👤 Author
-Built by Valorian0108 · GitHub · LiveWire Pay
+Built by Valorian0108 · GitHub · 
