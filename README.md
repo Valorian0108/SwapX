@@ -1,8 +1,9 @@
 # SwapX
-A clean, fast token swap interface built on Starknet. powered by AVNU.
+a clean, fast token swap interface built on Starknet. powered by AVNU.
 
 
-SwapX lets you swap STRK, ETH, USDC and USDT on Starknet directly from your browser. Connect your Argent X or Braavos wallet, enter an amount, and SwapX finds the best available rate through AVNU — Starknet's leading DEX aggregator — before sending the swap to your wallet for signing.
+SwapX lets you swap STRK, ETH, USDC and USDT on Starknet directly from your browser.
+Connect your Argent X or Braavos wallet, enter an amount, and SwapX finds the best available rate through AVNU — Starknet's leading DEX aggregator — before sending the swap to your wallet for signing.
 No seed phrases. No custodial accounts. Your wallet, your keys, your trade.
 
 
