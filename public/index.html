@@ -475,7 +475,7 @@
 <div class="powered">Powered by <a href="https://avnu.fi" target="_blank">AVNU</a> &middot; Starknet</div>
 
 <script>
-const BACKEND = "YOUR_RENDER_BACKEND_URL";
+const BACKEND = "https://c4a7ff65-163d-4b2d-b16e-298a5285f583-00-rdtsjv5ibqj5.kirk.replit.dev/api";
 
 const TOKEN_META = {
   STRK: { icon: "S", cls: "STRK" },
@@ -594,21 +594,69 @@ function disconnectWallet() {
 async function fetchBalance() {
   if (!walletAddress || !walletProvider) return;
   const token = fromSelect.value;
+  balanceEl.textContent = "...";
   try {
-    const result = await walletProvider.provider.callContract({
-      contractAddress: TOKEN_ADDRESSES[token],
-      entrypoint: "balanceOf",
-      calldata: [walletAddress],
-    });
-    const raw_result = result.result || result;
+    let raw_result;
+
+    // Method 1: starknet.js v5+ provider.call()
+    try {
+      const res = await walletProvider.provider.call({
+        contractAddress: TOKEN_ADDRESSES[token],
+        entrypoint: "balanceOf",
+        calldata: [walletAddress],
+      });
+      raw_result = res.result || res;
+    } catch (_) {
+      // Method 2: older callContract API
+      const res = await walletProvider.provider.callContract({
+        contractAddress: TOKEN_ADDRESSES[token],
+        entrypoint: "balanceOf",
+        calldata: [walletAddress],
+      });
+      raw_result = res.result || res;
+    }
+
+    if (!raw_result || raw_result.length === 0) throw new Error("empty result");
+
     const low  = BigInt(raw_result[0]);
-    const high = BigInt(raw_result[1] || "0x0");
+    const high = BigInt(raw_result[1] !== undefined ? raw_result[1] : "0x0");
     const raw  = low + (high << BigInt(128));
     const dec  = TOKEN_DECIMALS[token];
     const human = Number(raw * BigInt(1000000) / (BigInt(10) ** BigInt(dec))) / 1000000;
     walletBalance = human;
     balanceEl.textContent = human.toFixed(4) + " " + token;
-  } catch { balanceEl.textContent = "—"; }
+  } catch {
+    // Method 3: public Starknet RPC fallback
+    try {
+      const rpc = "https://starknet-mainnet.public.blastapi.io/rpc/v0_7";
+      const res = await fetch(rpc, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0", id: 1, method: "starknet_call",
+          params: [{
+            contract_address: TOKEN_ADDRESSES[token],
+            entry_point_selector: "0x2e4263afad30923c891518314c3c95dbc9dd9d0d2bc8e391cbb7c37c6cec40",
+            calldata: [walletAddress],
+          }, "latest"],
+        }),
+      });
+      const data = await res.json();
+      const result = data?.result;
+      if (result && result.length > 0) {
+        const low  = BigInt(result[0]);
+        const high = BigInt(result[1] !== undefined ? result[1] : "0x0");
+        const raw  = low + (high << BigInt(128));
+        const dec  = TOKEN_DECIMALS[token];
+        const human = Number(raw * BigInt(1000000) / (BigInt(10) ** BigInt(dec))) / 1000000;
+        walletBalance = human;
+        balanceEl.textContent = human.toFixed(4) + " " + token;
+        return;
+      }
+    } catch { /* silent */ }
+    walletBalance = 0;
+    balanceEl.textContent = "—";
+  }
 }
 
 function onFromTokenChange() { updateIcons(); fetchBalance(); triggerQuote(); }
