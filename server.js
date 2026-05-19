@@ -40,10 +40,10 @@ app.get("/quote", async (req, res) => {
   try {
     const url = `${AVNU_API}/swap/v2/quotes?sellTokenAddress=${TOKENS[fromToken]}&buyTokenAddress=${TOKENS[toToken]}&sellAmount=${toHexWei(amount, fromToken)}`;
     const response = await fetch(url);
-    if (!response.ok) return res.json({ success: false, error: "No route found — pair may not be supported on Sepolia" });
+    if (!response.ok) return res.json({ success: false, error: "No route found — pair may not be supported" });
 
     const data = await response.json();
-    if (!data || data.length === 0) return res.json({ success: false, error: "No route found — pair may not be supported on Sepolia" });
+    if (!data || data.length === 0) return res.json({ success: false, error: "No route found — pair may not be supported" });
 
     const quote = data[0];
     const buyAmount = fromWei(quote.buyAmount, toToken);
@@ -59,9 +59,11 @@ app.get("/quote", async (req, res) => {
 });
 
 app.post("/swap", async (req, res) => {
-  const { fromToken, toToken, amount, senderAddress } = req.body;
+  const { fromToken, toToken, amount, senderAddress, slippage } = req.body;
   if (!TOKENS[fromToken] || !TOKENS[toToken]) return res.json({ success: false, error: "Invalid token" });
   if (!senderAddress) return res.json({ success: false, error: "Wallet not connected" });
+
+  const slippageValue = Math.min(Math.max(parseFloat(slippage) / 100 || 0.005, 0.001), 0.05);
 
   try {
     const quoteUrl = `${AVNU_API}/swap/v2/quotes?sellTokenAddress=${TOKENS[fromToken]}&buyTokenAddress=${TOKENS[toToken]}&sellAmount=${toHexWei(amount, fromToken)}`;
@@ -75,7 +77,7 @@ app.post("/swap", async (req, res) => {
     const buildRes = await fetch(`${AVNU_API}/swap/v2/build`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quoteId: quote.quoteId, takerAddress: senderAddress, slippage: 0.005 }),
+      body: JSON.stringify({ quoteId: quote.quoteId, takerAddress: senderAddress, slippage: slippageValue }),
     });
 
     const buildData = await buildRes.json();
@@ -87,4 +89,5 @@ app.post("/swap", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("SwapZap running at http://localhost:3000"));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`SwapX running at http://localhost:${PORT}`));
