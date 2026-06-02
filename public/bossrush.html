@@ -65,7 +65,7 @@ hr{border:none;border-top:1px solid var(--ink);margin:0;}
 .hp-track{flex:1;height:14px;background:#e8e4de;border:1.5px solid var(--ink);min-width:80px;}
 .hp-fill{height:100%;background:var(--red);transition:width .1s;}
 .hud-hp-text{font-family:var(--mono);font-size:11px;min-width:80px;text-align:right;}
-.battle-arena-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;}
+.battle-arena-wrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;background:var(--bg);}
 #arena{display:block;max-width:100%;max-height:100%;}
 .battle-stats{background:var(--bg);padding:8px 20px;border-top:2px solid var(--ink);display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
 .lives-row{display:flex;align-items:center;gap:6px;}
@@ -415,10 +415,14 @@ function showBriefing(idx) {
 }
 
 function startBattle() {
+  battleGen++;
+  loopActive = false;
+  lastTime = 0;
   initBattleState(gs.bossIdx);
   updateHUD();
   showScreen('s-battle');
   resizeCanvas();
+  loopActive = true;
   requestAnimationFrame(gameLoop);
 }
 
@@ -453,29 +457,42 @@ const canvas = document.getElementById('arena');
 const ctx = canvas.getContext('2d');
 
 function resizeCanvas() {
-  const wrap = document.querySelector('.battle-arena-wrap');
-  if(!wrap) return;
-  const ww = wrap.clientWidth, wh = wrap.clientHeight;
-  const scale = Math.min(ww / C.W, wh / C.H);
-  canvas.width = C.W;
-  canvas.height = C.H;
-  canvas.style.width = (C.W * scale) + 'px';
-  canvas.style.height = (C.H * scale) + 'px';
+  requestAnimationFrame(() => {
+    const wrap = document.querySelector('.battle-arena-wrap');
+    if(!wrap) return;
+    const ww = wrap.clientWidth, wh = wrap.clientHeight;
+    if(!ww || !wh) return;
+    const scale = Math.min(ww / C.W, wh / C.H);
+    canvas.width = C.W;
+    canvas.height = C.H;
+    canvas.style.width = Math.floor(C.W * scale) + 'px';
+    canvas.style.height = Math.floor(C.H * scale) + 'px';
+  });
 }
 window.addEventListener('resize', resizeCanvas);
 
 // ─── GAME LOOP ────────────────────────────────────────────────
 let lastTime = 0;
+let loopActive = false;
+let battleGen = 0;
+
 function gameLoop(ts) {
-  const dt = Math.min(ts - lastTime, 50);
+  if(!loopActive) return;
+  const dt = Math.min(lastTime ? ts - lastTime : 16, 50);
   lastTime = ts;
-  if(document.getElementById('s-battle').classList.contains('active') && !bs.ended) {
-    update(dt);
-    render();
-    updateHUD();
-    requestAnimationFrame(gameLoop);
-  } else if(bs.ended) {
-    render();
+  try {
+    if(!bs.ended) {
+      update(dt);
+      render();
+      updateHUD();
+      requestAnimationFrame(gameLoop);
+    } else {
+      loopActive = false;
+      render();
+    }
+  } catch(e) {
+    console.error('gameLoop error:', e);
+    loopActive = false;
   }
 }
 
@@ -555,17 +572,19 @@ function updateBoss(dt) {
 function triggerPattern(pat) {
   const boss = bs.boss;
   const phaseMs = BOSSES[gs.bossIdx].phaseMs;
+  const myGen = battleGen; // capture — if battleGen changes, this battle is over
   boss.patternPhase = 'ACTIVE';
 
+  function stale() { return bs.ended || battleGen !== myGen; }
+
   if(pat === 'SWEEP') {
-    // Warning then wide floor sweep
     bs.hazards.push({ type:'SWEEP', phase:'WARNING', timer:1200, x:0, y:C.H-70, w:C.W, h:70, color:'rgba(217,56,58,0.25)', dmg:120 });
     setTimeout(() => {
-      if(bs.ended) return;
-      bs.hazards = bs.hazards.filter(h => h.type !== 'SWEEP' || h.phase !== 'WARNING');
+      if(stale()) return;
+      bs.hazards = bs.hazards.filter(h => !(h.type==='SWEEP' && h.phase==='WARNING'));
       bs.hazards.push({ type:'SWEEP', phase:'ACTIVE', timer:500, x:0, y:C.H-70, w:C.W, h:70, color:'rgba(217,56,58,0.85)', dmg:120 });
       setTimeout(() => {
-        if(bs.ended) return;
+        if(stale()) return;
         bs.hazards = bs.hazards.filter(h => h.type !== 'SWEEP');
         boss.isWeak = true; boss.weakTimer = 2000;
         boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
@@ -573,15 +592,14 @@ function triggerPattern(pat) {
     }, 1200);
   }
   else if(pat === 'SLAM') {
-    // Telegraphed slam - small area, then expand
     const tx = bs.player.x + bs.player.w/2 - 60;
     bs.hazards.push({ type:'SLAM', phase:'WARNING', timer:1500, x:Math.max(0,tx), y:0, w:120, h:C.H, color:'rgba(217,56,58,0.2)', dmg:0 });
     setTimeout(() => {
-      if(bs.ended) return;
+      if(stale()) return;
       bs.hazards = bs.hazards.filter(h => h.type !== 'SLAM');
       bs.hazards.push({ type:'SLAM', phase:'ACTIVE', timer:400, x:Math.max(0,tx), y:0, w:120, h:C.H, color:'rgba(217,56,58,0.9)', dmg:120 });
       setTimeout(() => {
-        if(bs.ended) return;
+        if(stale()) return;
         bs.hazards = bs.hazards.filter(h => h.type !== 'SLAM');
         boss.isWeak = true; boss.weakTimer = 2200;
         boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
@@ -589,99 +607,91 @@ function triggerPattern(pat) {
     }, 1500);
   }
   else if(pat === 'ARMS') {
-    // Two sweeps from opposite sides with gap in middle
     bs.hazards.push({ type:'ARMS_TOP', phase:'WARNING', timer:1200, x:0, y:0, w:C.W, h:90, color:'rgba(217,56,58,0.25)', dmg:0 });
     bs.hazards.push({ type:'ARMS_BOT', phase:'WARNING', timer:1200, x:0, y:C.H-90, w:C.W, h:90, color:'rgba(217,56,58,0.25)', dmg:0 });
     setTimeout(() => {
-      if(bs.ended) return;
+      if(stale()) return;
       bs.hazards = bs.hazards.filter(h => !['ARMS_TOP','ARMS_BOT'].includes(h.type));
       bs.hazards.push({ type:'ARMS_TOP', phase:'ACTIVE', timer:600, x:0, y:0, w:C.W, h:90, color:'rgba(217,56,58,0.85)', dmg:280 });
       bs.hazards.push({ type:'ARMS_BOT', phase:'ACTIVE', timer:600, x:0, y:C.H-90, w:C.W, h:90, color:'rgba(217,56,58,0.85)', dmg:280 });
       setTimeout(() => {
-        if(bs.ended) return;
+        if(stale()) return;
         bs.hazards = bs.hazards.filter(h => !['ARMS_TOP','ARMS_BOT'].includes(h.type));
         boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
       }, 600);
     }, 1200);
   }
   else if(pat === 'PROJECTILES') {
-    // 3 diagonal projectiles
     [-1,0,1].forEach((dir, i) => {
       setTimeout(() => {
-        if(bs.ended) return;
+        if(stale()) return;
         bs.hazards.push({ type:'PROJ_BOSS', phase:'ACTIVE', timer:3000,
           x: boss.x, y: boss.y + boss.h/2,
-          w:22, h:22, vx:-6, vy:dir*2.5,
-          color:'#D9383A', dmg:280 });
+          w:22, h:22, vx:-6, vy:dir*2.5, color:'#D9383A', dmg:280 });
       }, i*120);
     });
     setTimeout(() => {
-      if(bs.ended) return;
+      if(stale()) return;
       boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
     }, 2000);
   }
   else if(pat === 'CURSE_ORB') {
-    // Tracking orb
-    const orb = { type:'CURSE_ORB', phase:'ACTIVE', timer:4000,
+    bs.hazards.push({ type:'CURSE_ORB', phase:'ACTIVE', timer:4000,
       x: boss.x, y: boss.y + boss.h/2,
       w:36, h:36, vx:-1.5, vy:0,
-      tracking:true, color:'rgba(139,105,20,0.85)', dmg:280 };
-    bs.hazards.push(orb);
+      tracking:true, color:'rgba(139,105,20,0.85)', dmg:280 });
     setTimeout(() => {
-      if(bs.ended) return;
+      if(stale()) return;
       bs.hazards = bs.hazards.filter(h => h.type !== 'CURSE_ORB');
       boss.isWeak = true; boss.weakTimer = 1800;
       boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
     }, 4000);
   }
   else if(pat === 'DASH') {
-    // Boss dashes across - safe corner
     const safeY = Math.random() > 0.5 ? 0 : C.H-80;
     bs.hazards.push({ type:'DASH_WARN', phase:'WARNING', timer:1000,
       x:0, y: safeY === 0 ? 80 : 0, w:C.W, h:C.H-80,
-      safeY, color:'rgba(217,56,58,0.3)', dmg:0 });
+      color:'rgba(217,56,58,0.3)', dmg:0 });
     setTimeout(() => {
-      if(bs.ended) return;
+      if(stale()) return;
       bs.hazards = bs.hazards.filter(h => h.type !== 'DASH_WARN');
       bs.hazards.push({ type:'DASH_ACT', phase:'ACTIVE', timer:350,
         x:0, y: safeY === 0 ? 80 : 0, w:C.W, h:C.H-80,
         color:'rgba(217,56,58,0.9)', dmg:450 });
       setTimeout(() => {
-        if(bs.ended) return;
+        if(stale()) return;
         bs.hazards = bs.hazards.filter(h => h.type !== 'DASH_ACT');
         boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
       }, 350);
     }, 1000);
   }
   else if(pat === 'FIRE_BREATH') {
-    // 60% floor coverage
     bs.hazards.push({ type:'FIRE_WARN', phase:'WARNING', timer:1400,
       x:0, y:C.H*0.35, w:C.W*0.75, h:C.H*0.65,
       color:'rgba(217,56,58,0.25)', dmg:0 });
     setTimeout(() => {
-      if(bs.ended) return;
+      if(stale()) return;
       bs.hazards = bs.hazards.filter(h => h.type !== 'FIRE_WARN');
       bs.hazards.push({ type:'FIRE_ACT', phase:'ACTIVE', timer:2000,
         x:0, y:C.H*0.35, w:C.W*0.75, h:C.H*0.65,
         color:'rgba(217,56,58,0.88)', dmg:450 });
       setTimeout(() => {
-        if(bs.ended) return;
+        if(stale()) return;
         bs.hazards = bs.hazards.filter(h => h.type !== 'FIRE_ACT');
-        boss.isWeak = true; boss.weakTimer = 1000; // only 1s!
+        boss.isWeak = true; boss.weakTimer = 1000;
         boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
       }, 2000);
     }, 1400);
   }
   else if(pat === 'TAIL_SLAM') {
-    // 3 expanding ring shockwaves
     [0,1,2].forEach(i => {
       setTimeout(() => {
-        if(bs.ended) return;
+        if(stale()) return;
         bs.effects.push({ type:'RING', x:C.W/2, y:C.H-10, r:20, maxR:C.W, growing:true, timer:1200, dmg:450 });
       }, i * 350);
     });
     setTimeout(() => {
-      if(bs.ended) return;
+      if(stale()) return;
       boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
     }, 2400);
   }
