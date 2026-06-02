@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BOSS RUSH</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#FDFBF7;
+  --ink:#0C0C0C;
+  --red:#D9383A;
+  --serif:'Playfair Display',serif;
+  --sans:'DM Sans',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --shadow:4px 4px 0px 0px #0C0C0C;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;overflow:hidden;}
+.screen{display:none;position:fixed;inset:0;overflow:hidden;}
+.screen.active{display:flex;flex-direction:column;}
+hr{border:none;border-top:1px solid var(--ink);margin:0;}
+
+/* TITLE */
+#s-title{align-items:center;justify-content:center;padding:40px 20px;}
+.title-inner{width:100%;max-width:600px;}
+.title-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-bottom:12px;}
+.title-h1{font-family:var(--serif);font-size:clamp(60px,12vw,110px);line-height:.9;font-weight:900;margin-bottom:8px;}
+.title-sub{font-family:var(--mono);font-size:13px;color:#555;margin:16px 0 32px;}
+.title-hr{margin:20px 0;}
+.btn{display:inline-block;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:14px 32px;background:var(--red);color:#fff;border:2px solid var(--ink);box-shadow:var(--shadow);cursor:pointer;transition:transform .08s,box-shadow .08s;user-select:none;}
+.btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0px 0px #0C0C0C;}
+.btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0px 0px #0C0C0C;}
+.btn.secondary{background:var(--bg);color:var(--ink);}
+.high-score-row{display:flex;align-items:center;gap:16px;margin-top:24px;}
+.hs-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:#888;}
+.hs-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--red);}
+
+/* BRIEFING */
+#s-briefing{padding:0;}
+.brief-header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--ink);}
+.brief-phase{font-family:var(--mono);font-size:11px;letter-spacing:3px;}
+.brief-body{display:grid;grid-template-columns:1fr 1fr;flex:1;overflow:hidden;}
+.brief-left{padding:40px 32px;border-right:1px solid var(--ink);display:flex;flex-direction:column;justify-content:space-between;}
+.brief-boss-name{font-family:var(--serif);font-size:clamp(40px,8vw,80px);line-height:.95;font-weight:900;margin-bottom:8px;}
+.brief-boss-sub{font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:24px;}
+.brief-lore{font-family:var(--sans);font-size:14px;line-height:1.7;color:#333;max-width:360px;}
+.brief-right{padding:40px 32px;display:flex;flex-direction:column;justify-content:space-between;}
+.brief-stats{display:flex;flex-direction:column;gap:0;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #e0ddd8;}
+.stat-key{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:#888;}
+.stat-val{font-family:var(--mono);font-size:15px;font-weight:700;}
+.brief-actions{display:flex;gap:12px;justify-content:flex-end;}
+@media(max-width:600px){
+  .brief-body{grid-template-columns:1fr;}
+  .brief-left{border-right:none;border-bottom:1px solid var(--ink);padding:24px 20px;}
+  .brief-right{padding:24px 20px;}
+  .brief-boss-name{font-size:44px;}
+}
+
+/* BATTLE */
+#s-battle{background:var(--ink);}
+.battle-hud{background:var(--bg);padding:10px 20px;border-bottom:2px solid var(--ink);display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+.hud-boss-name{font-family:var(--serif);font-size:15px;font-weight:700;min-width:120px;}
+.hp-track{flex:1;height:14px;background:#e8e4de;border:1.5px solid var(--ink);min-width:80px;}
+.hp-fill{height:100%;background:var(--red);transition:width .1s;}
+.hud-hp-text{font-family:var(--mono);font-size:11px;min-width:80px;text-align:right;}
+.battle-arena-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;}
+#arena{display:block;max-width:100%;max-height:100%;}
+.battle-stats{background:var(--bg);padding:8px 20px;border-top:2px solid var(--ink);display:flex;align-items:center;gap:24px;flex-wrap:wrap;}
+.lives-row{display:flex;align-items:center;gap:6px;}
+.life-pip{width:12px;height:12px;background:var(--red);border:1.5px solid var(--ink);display:inline-block;}
+.life-pip.empty{background:transparent;}
+.stat-piece{font-family:var(--mono);font-size:13px;}
+.stat-piece span{color:var(--red);font-weight:700;}
+.touch-controls{display:none;background:var(--bg);border-top:2px solid var(--ink);padding:10px 16px;gap:12px;align-items:center;justify-content:space-between;}
+.dpad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px);gap:2px;}
+.dpad-btn{background:var(--bg);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);active-scale:.95;user-select:none;-webkit-tap-highlight-color:transparent;}
+.dpad-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+.dpad-spacer{background:transparent;border:none;box-shadow:none;}
+.action-btns{display:flex;gap:10px;}
+.act-btn{width:64px;height:64px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);}
+.act-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+#btn-dodge{background:#f0ece5;flex-direction:column;gap:2px;}
+#btn-attack{background:var(--red);color:#fff;flex-direction:column;gap:2px;}
+.act-label{font-size:9px;}
+@media(max-width:700px){.touch-controls{display:flex;}}
+
+/* BOSS CLEAR / RUN COMPLETE */
+#s-clear,#s-complete{align-items:center;justify-content:center;padding:40px 20px;}
+.result-inner{width:100%;max-width:560px;}
+.result-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:4px;margin-bottom:8px;}
+.result-h1{font-family:var(--serif);font-size:clamp(40px,8vw,70px);font-weight:900;line-height:.95;margin-bottom:24px;}
+.result-table{width:100%;border-collapse:collapse;margin:24px 0;}
+.result-table td{font-family:var(--mono);font-size:14px;padding:12px 0;border-bottom:1px solid #ddd8d0;}
+.result-table td:last-child{text-align:right;font-weight:700;color:var(--red);}
+.result-total{font-family:var(--mono);font-size:20px;font-weight:700;text-align:right;padding:16px 0;border-top:2px solid var(--ink);}
+.result-actions{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;}
+
+/* LEADERBOARD */
+#s-leaderboard{padding:0;}
+.lb-header{padding:24px 32px;border-bottom:1px solid var(--ink);display:flex;align-items:baseline;gap:24px;}
+.lb-title{font-family:var(--serif);font-size:42px;font-weight:900;}
+.lb-subtitle{font-family:var(--mono);font-size:12px;color:#888;letter-spacing:2px;}
+.lb-body{padding:0 32px;overflow-y:auto;flex:1;}
+.lb-row{display:grid;grid-template-columns:60px 1fr auto auto;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid #e8e4de;}
+.lb-rank{font-family:var(--serif);font-size:36px;font-weight:900;color:#ddd8d0;}
+.lb-rank.top3{color:var(--ink);}
+.lb-name{font-family:var(--sans);font-size:15px;font-weight:500;}
+.lb-score{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--red);}
+.lb-date{font-family:var(--mono);font-size:11px;color:#aaa;}
+.lb-empty{font-family:var(--mono);font-size:13px;color:#aaa;padding:40px 0;text-align:center;}
+.lb-actions{padding:24px 32px;border-top:1px solid var(--ink);display:flex;gap:12px;}
+@media(max-width:600px){.lb-header{padding:20px;}.lb-body{padding:0 20px;}.lb-actions{padding:20px;}}
+
+/* WEAK POINT FLASH */
+@keyframes weakFlash{0%,100%{opacity:1;}50%{opacity:.3;}}
+.weak-active{animation:weakFlash .3s infinite;}
+
+/* NAME INPUT */
+.name-input-wrap{margin:20px 0;}
+.name-input-label{font-family:var(--mono);font-size:11px;letter-spacing:2px;margin-bottom:8px;display:block;}
+.name-input{font-family:var(--mono);font-size:16px;padding:12px 16px;border:2px solid var(--ink);background:var(--bg);width:100%;box-shadow:var(--shadow);outline:none;}
+.name-input:focus{border-color:var(--red);}
+</style>
+</head>
+<body>
+
+<!-- TITLE -->
+<div id="s-title" class="screen active">
+  <div class="title-inner">
+    <div class="title-eyebrow">MapleStory Universe · Vibe Camp</div>
+    <hr class="title-hr">
+    <div class="title-h1">BOSS<br>RUSH</div>
+    <div class="title-sub">3 BOSSES · DODGE & ATTACK · LEADERBOARD</div>
+    <hr class="title-hr">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="btn" onclick="startRun()">START RUN</div>
+      <div class="btn secondary" onclick="showScreen('s-leaderboard')">LEADERBOARD</div>
+    </div>
+    <div class="high-score-row">
+      <span class="hs-label">BEST SCORE</span>
+      <span class="hs-val" id="title-hs">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- BRIEFING -->
+<div id="s-briefing" class="screen">
+  <div class="brief-header">
+    <span class="brief-phase" id="brief-phase">BOSS 01 / 03</span>
+    <span class="brief-phase" style="color:var(--red);">PRE-BATTLE BRIEFING</span>
+  </div>
+  <div class="brief-body">
+    <div class="brief-left">
+      <div>
+        <div class="brief-boss-name" id="brief-name">STUMPY</div>
+        <div class="brief-boss-sub" id="brief-sub">THE IRON FOOT</div>
+        <div class="brief-lore" id="brief-lore">Lore text here.</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:#aaa;margin-top:24px;">CONTROLS: WASD / ARROWS · SPACE=DODGE · Z=ATTACK</div>
+    </div>
+    <div class="brief-right">
+      <div class="brief-stats" id="brief-stats"></div>
+      <div class="brief-actions">
+        <div class="btn" onclick="startBattle()">ENTER ARENA →</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BATTLE -->
+<div id="s-battle" class="screen">
+  <div class="battle-hud">
+    <div class="hud-boss-name" id="hud-boss-name">STUMPY</div>
+    <div class="hp-track"><div class="hp-fill" id="hp-fill" style="width:100%"></div></div>
+    <div class="hud-hp-text" id="hud-hp-text">800 / 800</div>
+  </div>
+  <div class="battle-arena-wrap">
+    <canvas id="arena"></canvas>
+  </div>
+  <div class="battle-stats">
+    <div class="lives-row" id="lives-row"></div>
+    <div class="stat-piece">SCORE <span id="hud-score">0</span></div>
+    <div class="stat-piece">TIME <span id="hud-time">00:00</span></div>
+    <div class="stat-piece" id="hud-weak" style="display:none;color:var(--red);font-weight:700;">⚡ WEAK POINT</div>
+  </div>
+  <div class="touch-controls" id="touch-controls">
+    <div class="dpad">
+      <div class="dpad-spacer"></div>
+      <div class="dpad-btn" id="dpad-up">↑</div>
+      <div class="dpad-spacer"></div>
+      <div class="dpad-btn" id="dpad-left">←</div>
+      <div class="dpad-spacer"></div>
+      <div class="dpad-btn" id="dpad-right">→</div>
+      <div class="dpad-spacer"></div>
+      <div class="dpad-btn" id="dpad-down">↓</div>
+      <div class="dpad-spacer"></div>
+    </div>
+    <div class="action-btns">
+      <div class="act-btn" id="btn-dodge">
+        <span>DODGE</span>
+        <span class="act-label" id="dodge-cd-label">READY</span>
+      </div>
+      <div class="act-btn" id="btn-attack">
+        <span>ATTACK</span>
+        <span class="act-label">Z</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOSS CLEAR -->
+<div id="s-clear" class="screen">
+  <div class="result-inner">
+    <div class="result-eyebrow" id="clear-eyebrow">BOSS CLEARED</div>
+    <div class="result-h1" id="clear-boss-name">STUMPY<br>DEFEATED</div>
+    <hr>
+    <table class="result-table">
+      <tr><td>TIME TAKEN</td><td id="clear-time">—</td></tr>
+      <tr><td>LIVES REMAINING</td><td id="clear-lives">—</td></tr>
+      <tr><td>WEAK POINT HITS</td><td id="clear-weak">—</td></tr>
+      <tr><td>BONUS</td><td id="clear-bonus">—</td></tr>
+    </table>
+    <div class="result-total">BOSS SCORE: <span id="clear-score" style="color:var(--red);">0</span></div>
+    <div class="result-actions">
+      <div class="btn" id="clear-next-btn" onclick="nextBoss()">NEXT BOSS →</div>
+    </div>
+  </div>
+</div>
+
+<!-- RUN COMPLETE -->
+<div id="s-complete" class="screen">
+  <div class="result-inner">
+    <div class="result-eyebrow">RUN COMPLETE</div>
+    <div class="result-h1">ALL BOSSES<br>CLEARED</div>
+    <hr>
+    <table class="result-table" id="complete-breakdown"></table>
+    <div class="result-total">TOTAL SCORE: <span id="complete-total" style="color:var(--red);">0</span></div>
+    <div class="name-input-wrap">
+      <label class="name-input-label">ENTER YOUR NAME (MAX 12 CHARS)</label>
+      <input class="name-input" id="player-name-input" maxlength="12" placeholder="MAPLE_HERO" autocomplete="off">
+    </div>
+    <div class="result-actions">
+      <div class="btn" onclick="submitScore()">SUBMIT SCORE</div>
+      <div class="btn secondary" onclick="startRun()">PLAY AGAIN</div>
+    </div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="s-leaderboard" class="screen">
+  <div class="lb-header">
+    <div class="lb-title">LEADERBOARD</div>
+    <div class="lb-subtitle">TOP 10 RUNNERS</div>
+  </div>
+  <div class="lb-body" id="lb-body"></div>
+  <div class="lb-actions">
+    <div class="btn secondary" onclick="showScreen('s-title')">← BACK</div>
+    <div class="btn secondary" onclick="clearLeaderboard()">CLEAR</div>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ────────────────────────────────────────────────
+const C = {
+  W: 800, H: 380,
+  PLAYER_SPEED: 3.5,
+  DODGE_DURATION: 380,
+  DODGE_COOLDOWN: 1600,
+  ATTACK_COOLDOWN: 320,
+  PROJ_SPEED: 9,
+  HIT_COOLDOWN: 1000,
+  PROJ_DMG: 50,
+  PROJ_DMG_WEAK: 130,
+};
+
+const BOSSES = [
+  {
+    id:0, name:'STUMPY', sub:'THE IRON FOOT',
+    lore:'An ancient tree stump possessed by dark magic. Slow but earth-shattering. Every step cracks the ground beneath it.',
+    hp:800, color:'#5C4033', weakColor:'#D9383A',
+    stats:{'HP':'800','ATK':'120 / hit','WEAK POINT':'After slam lands','PHASE':'1 / 3'},
+    patterns:['SWEEP','SLAM'],
+    phaseMs:3200
+  },
+  {
+    id:1, name:'ZAKUM', sub:'THE CURSED GOD',
+    lore:'An ancient deity of the Egyptian ruins. Its hundred arms strike from every direction at once. Pattern recognition is the only survival.',
+    hp:1800, color:'#8B6914', weakColor:'#D9383A',
+    stats:{'HP':'1,800','ATK':'280 / hit','WEAK POINT':'After curse orb expires','PHASE':'2 / 3'},
+    patterns:['ARMS','PROJECTILES','CURSE_ORB'],
+    phaseMs:2800
+  },
+  {
+    id:2, name:'HORNTAIL', sub:'THE ANCIENT TERROR',
+    lore:'The oldest dragon in Maple World. Its speed defies its size. Only the fastest Maplers survive long enough to land a blow.',
+    hp:3200, color:'#1A1A1A', weakColor:'#D9383A',
+    stats:{'HP':'3,200','ATK':'450 / hit','WEAK POINT':'1s after fire breath only','PHASE':'3 / 3'},
+    patterns:['DASH','FIRE_BREATH','TAIL_SLAM'],
+    phaseMs:2200,
+    scoreMultiplier:1.5
+  }
+];
+
+// ─── GAME STATE ───────────────────────────────────────────────
+let gs = {};
+
+function initGameState() {
+  gs = {
+    bossIdx: 0,
+    runScore: 0,
+    bossResults: [],
+    runStartTime: 0,
+  };
+}
+
+let bs = {}; // battle state
+
+function initBattleState(bossIdx) {
+  const boss = BOSSES[bossIdx];
+  bs = {
+    boss: { ...boss, curHp: boss.hp, x: C.W - 140, y: C.H/2 - 50, w: 110, h: 100,
+      weakTimer: 0, isWeak: false, hitFlash: 0, phaseTimer: 0,
+      patternIdx: 0, patternPhase: 'WAIT', patternTimer: 0, phaseCount: 0 },
+    player: { x: 80, y: C.H/2 - 20, w: 38, h: 52, vx: 0, vy: 0,
+      dodgeTimer: 0, dodgeCooldown: 0, isDodging: false,
+      attackCooldown: 0, lives: 3, hitCooldown: 0, isInvincible: false,
+      dx: 0, dy: 0, dodgeTrail: [] },
+    projectiles: [],
+    hazards: [],
+    effects: [],
+    score: 0,
+    weakHits: 0,
+    bossStartTime: Date.now(),
+    ended: false,
+    endTimer: 0,
+    totalDmgDealt: 0,
+  };
+  keys = {};
+  touchKeys = {};
+}
+
+// ─── INPUT ────────────────────────────────────────────────────
+let keys = {}, touchKeys = {};
+document.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
+  if(e.code==='Space') tryDodge();
+  if(e.code==='KeyZ'||e.code==='KeyJ') tryAttack();
+});
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+function setupTouchControls() {
+  const map = [
+    ['dpad-up','up'],['dpad-down','down'],['dpad-left','left'],['dpad-right','right']
+  ];
+  map.forEach(([id,k]) => {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', e => { e.preventDefault(); touchKeys[k]=true; }, {passive:false});
+    el.addEventListener('touchend', e => { e.preventDefault(); touchKeys[k]=false; }, {passive:false});
+  });
+  document.getElementById('btn-dodge').addEventListener('touchstart', e => { e.preventDefault(); tryDodge(); }, {passive:false});
+  document.getElementById('btn-attack').addEventListener('touchstart', e => { e.preventDefault(); tryAttack(); }, {passive:false});
+  document.getElementById('btn-dodge').addEventListener('mousedown', () => tryDodge());
+  document.getElementById('btn-attack').addEventListener('mousedown', () => tryAttack());
+}
+
+function tryDodge() {
+  if(bs.player && bs.player.dodgeCooldown <= 0 && !bs.player.isDodging) {
+    bs.player.isDodging = true;
+    bs.player.dodgeTimer = C.DODGE_DURATION;
+    bs.player.dodgeCooldown = C.DODGE_COOLDOWN;
+    bs.player.isInvincible = true;
+  }
+}
+function tryAttack() {
+  if(bs.player && bs.player.attackCooldown <= 0) {
+    bs.player.attackCooldown = C.ATTACK_COOLDOWN;
+    const dmg = bs.boss.isWeak ? C.PROJ_DMG_WEAK : C.PROJ_DMG;
+    bs.projectiles.push({
+      x: bs.player.x + bs.player.w,
+      y: bs.player.y + bs.player.h/2 - 5,
+      w: 18, h: 10,
+      vx: C.PROJ_SPEED, vy: 0,
+      dmg, isWeak: bs.boss.isWeak
+    });
+  }
+}
+
+// ─── SCREEN MANAGEMENT ────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── START / FLOW ─────────────────────────────────────────────
+function startRun() {
+  initGameState();
+  gs.runStartTime = Date.now();
+  showBriefing(0);
+}
+
+function showBriefing(idx) {
+  const boss = BOSSES[idx];
+  document.getElementById('brief-phase').textContent = `BOSS 0${idx+1} / 03`;
+  document.getElementById('brief-name').textContent = boss.name;
+  document.getElementById('brief-sub').textContent = boss.sub;
+  document.getElementById('brief-lore').textContent = boss.lore;
+  const statsEl = document.getElementById('brief-stats');
+  statsEl.innerHTML = Object.entries(boss.stats).map(([k,v]) =>
+    `<div class="stat-row"><span class="stat-key">${k}</span><span class="stat-val">${v}</span></div>`
+  ).join('');
+  showScreen('s-briefing');
+}
+
+function startBattle() {
+  initBattleState(gs.bossIdx);
+  updateHUD();
+  showScreen('s-battle');
+  resizeCanvas();
+  requestAnimationFrame(gameLoop);
+}
+
+function updateHUD() {
+  const boss = bs.boss;
+  document.getElementById('hud-boss-name').textContent = boss.name;
+  document.getElementById('hp-fill').style.width = (boss.curHp / boss.hp * 100) + '%';
+  document.getElementById('hud-hp-text').textContent = `${Math.max(0,boss.curHp)} / ${boss.hp}`;
+  document.getElementById('hud-score').textContent = bs.score.toLocaleString();
+  const elapsed = Math.floor((Date.now() - bs.bossStartTime) / 1000);
+  const mm = String(Math.floor(elapsed/60)).padStart(2,'0');
+  const ss = String(elapsed%60).padStart(2,'0');
+  document.getElementById('hud-time').textContent = `${mm}:${ss}`;
+  const livesPips = document.getElementById('lives-row');
+  livesPips.innerHTML = [0,1,2].map(i =>
+    `<div class="life-pip${i < bs.player.lives ? '' : ' empty'}"></div>`
+  ).join('');
+  const weakEl = document.getElementById('hud-weak');
+  weakEl.style.display = boss.isWeak ? '' : 'none';
+  const dodgeLabel = document.getElementById('dodge-cd-label');
+  if(dodgeLabel) {
+    if(bs.player.dodgeCooldown > 0) {
+      dodgeLabel.textContent = (bs.player.dodgeCooldown/1000).toFixed(1)+'s';
+    } else {
+      dodgeLabel.textContent = 'READY';
+    }
+  }
+}
+
+// ─── CANVAS ───────────────────────────────────────────────────
+const canvas = document.getElementById('arena');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+  const wrap = document.querySelector('.battle-arena-wrap');
+  if(!wrap) return;
+  const ww = wrap.clientWidth, wh = wrap.clientHeight;
+  const scale = Math.min(ww / C.W, wh / C.H);
+  canvas.width = C.W;
+  canvas.height = C.H;
+  canvas.style.width = (C.W * scale) + 'px';
+  canvas.style.height = (C.H * scale) + 'px';
+}
+window.addEventListener('resize', resizeCanvas);
+
+// ─── GAME LOOP ────────────────────────────────────────────────
+let lastTime = 0;
+function gameLoop(ts) {
+  const dt = Math.min(ts - lastTime, 50);
+  lastTime = ts;
+  if(document.getElementById('s-battle').classList.contains('active') && !bs.ended) {
+    update(dt);
+    render();
+    updateHUD();
+    requestAnimationFrame(gameLoop);
+  } else if(bs.ended) {
+    render();
+  }
+}
+
+// ─── UPDATE ───────────────────────────────────────────────────
+function update(dt) {
+  updatePlayer(dt);
+  updateBoss(dt);
+  updateProjectiles(dt);
+  updateHazards(dt);
+  updateEffects(dt);
+  checkBossDeath();
+}
+
+function updatePlayer(dt) {
+  const p = bs.player;
+  // movement input
+  const up = keys['ArrowUp']||keys['KeyW']||touchKeys['up'];
+  const down = keys['ArrowDown']||keys['KeyS']||touchKeys['down'];
+  const left = keys['ArrowLeft']||keys['KeyA']||touchKeys['left'];
+  const right = keys['ArrowRight']||keys['KeyD']||touchKeys['right'];
+
+  p.vx = (left ? -1 : right ? 1 : 0) * C.PLAYER_SPEED;
+  p.vy = (up ? -1 : down ? 1 : 0) * C.PLAYER_SPEED;
+
+  if(p.isDodging) {
+    const dodgeSpeedMult = 2.2;
+    p.x += (p.vx || (keys['ArrowRight']||keys['KeyD'] ? C.PLAYER_SPEED : -C.PLAYER_SPEED * 0.5)) * dodgeSpeedMult * dt/16;
+    p.y += p.vy * dodgeSpeedMult * dt/16;
+    p.dodgeTrail.push({x: p.x, y: p.y, a: 0.6});
+    p.dodgeTimer -= dt;
+    if(p.dodgeTimer <= 0) {
+      p.isDodging = false;
+      p.isInvincible = false;
+    }
+  } else {
+    p.x += p.vx * dt/16;
+    p.y += p.vy * dt/16;
+  }
+
+  // constrain to left half + margins
+  p.x = Math.max(8, Math.min(C.W/2 - 20, p.x));
+  p.y = Math.max(8, Math.min(C.H - p.h - 8, p.y));
+
+  // dodge trail fade
+  p.dodgeTrail = p.dodgeTrail.map(t => ({...t, a: t.a - 0.06})).filter(t => t.a > 0);
+
+  if(p.dodgeCooldown > 0) p.dodgeCooldown -= dt;
+  if(p.attackCooldown > 0) p.attackCooldown -= dt;
+  if(p.hitCooldown > 0) {
+    p.hitCooldown -= dt;
+    if(p.hitCooldown <= 0) p.isInvincible = false;
+  }
+}
+
+function updateBoss(dt) {
+  const boss = bs.boss;
+  // Pattern state machine
+  boss.phaseTimer -= dt;
+  boss.patternTimer -= dt;
+
+  if(boss.weakTimer > 0) {
+    boss.weakTimer -= dt;
+    if(boss.weakTimer <= 0) { boss.isWeak = false; boss.weakTimer = 0; }
+  }
+  if(boss.hitFlash > 0) boss.hitFlash -= dt;
+
+  // Choose next pattern
+  if(boss.patternPhase === 'WAIT' && boss.phaseTimer <= 0) {
+    const patterns = BOSSES[gs.bossIdx].patterns;
+    const pat = patterns[boss.patternIdx % patterns.length];
+    boss.patternIdx++;
+    boss.phaseCount++;
+    triggerPattern(pat);
+  }
+}
+
+function triggerPattern(pat) {
+  const boss = bs.boss;
+  const phaseMs = BOSSES[gs.bossIdx].phaseMs;
+  boss.patternPhase = 'ACTIVE';
+
+  if(pat === 'SWEEP') {
+    // Warning then wide floor sweep
+    bs.hazards.push({ type:'SWEEP', phase:'WARNING', timer:1200, x:0, y:C.H-70, w:C.W, h:70, color:'rgba(217,56,58,0.25)', dmg:120 });
+    setTimeout(() => {
+      if(bs.ended) return;
+      bs.hazards = bs.hazards.filter(h => h.type !== 'SWEEP' || h.phase !== 'WARNING');
+      bs.hazards.push({ type:'SWEEP', phase:'ACTIVE', timer:500, x:0, y:C.H-70, w:C.W, h:70, color:'rgba(217,56,58,0.85)', dmg:120 });
+      setTimeout(() => {
+        if(bs.ended) return;
+        bs.hazards = bs.hazards.filter(h => h.type !== 'SWEEP');
+        boss.isWeak = true; boss.weakTimer = 2000;
+        boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+      }, 500);
+    }, 1200);
+  }
+  else if(pat === 'SLAM') {
+    // Telegraphed slam - small area, then expand
+    const tx = bs.player.x + bs.player.w/2 - 60;
+    bs.hazards.push({ type:'SLAM', phase:'WARNING', timer:1500, x:Math.max(0,tx), y:0, w:120, h:C.H, color:'rgba(217,56,58,0.2)', dmg:0 });
+    setTimeout(() => {
+      if(bs.ended) return;
+      bs.hazards = bs.hazards.filter(h => h.type !== 'SLAM');
+      bs.hazards.push({ type:'SLAM', phase:'ACTIVE', timer:400, x:Math.max(0,tx), y:0, w:120, h:C.H, color:'rgba(217,56,58,0.9)', dmg:120 });
+      setTimeout(() => {
+        if(bs.ended) return;
+        bs.hazards = bs.hazards.filter(h => h.type !== 'SLAM');
+        boss.isWeak = true; boss.weakTimer = 2200;
+        boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+      }, 400);
+    }, 1500);
+  }
+  else if(pat === 'ARMS') {
+    // Two sweeps from opposite sides with gap in middle
+    bs.hazards.push({ type:'ARMS_TOP', phase:'WARNING', timer:1200, x:0, y:0, w:C.W, h:90, color:'rgba(217,56,58,0.25)', dmg:0 });
+    bs.hazards.push({ type:'ARMS_BOT', phase:'WARNING', timer:1200, x:0, y:C.H-90, w:C.W, h:90, color:'rgba(217,56,58,0.25)', dmg:0 });
+    setTimeout(() => {
+      if(bs.ended) return;
+      bs.hazards = bs.hazards.filter(h => !['ARMS_TOP','ARMS_BOT'].includes(h.type));
+      bs.hazards.push({ type:'ARMS_TOP', phase:'ACTIVE', timer:600, x:0, y:0, w:C.W, h:90, color:'rgba(217,56,58,0.85)', dmg:280 });
+      bs.hazards.push({ type:'ARMS_BOT', phase:'ACTIVE', timer:600, x:0, y:C.H-90, w:C.W, h:90, color:'rgba(217,56,58,0.85)', dmg:280 });
+      setTimeout(() => {
+        if(bs.ended) return;
+        bs.hazards = bs.hazards.filter(h => !['ARMS_TOP','ARMS_BOT'].includes(h.type));
+        boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+      }, 600);
+    }, 1200);
+  }
+  else if(pat === 'PROJECTILES') {
+    // 3 diagonal projectiles
+    [-1,0,1].forEach((dir, i) => {
+      setTimeout(() => {
+        if(bs.ended) return;
+        bs.hazards.push({ type:'PROJ_BOSS', phase:'ACTIVE', timer:3000,
+          x: boss.x, y: boss.y + boss.h/2,
+          w:22, h:22, vx:-6, vy:dir*2.5,
+          color:'#D9383A', dmg:280 });
+      }, i*120);
+    });
+    setTimeout(() => {
+      if(bs.ended) return;
+      boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+    }, 2000);
+  }
+  else if(pat === 'CURSE_ORB') {
+    // Tracking orb
+    const orb = { type:'CURSE_ORB', phase:'ACTIVE', timer:4000,
+      x: boss.x, y: boss.y + boss.h/2,
+      w:36, h:36, vx:-1.5, vy:0,
+      tracking:true, color:'rgba(139,105,20,0.85)', dmg:280 };
+    bs.hazards.push(orb);
+    setTimeout(() => {
+      if(bs.ended) return;
+      bs.hazards = bs.hazards.filter(h => h.type !== 'CURSE_ORB');
+      boss.isWeak = true; boss.weakTimer = 1800;
+      boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+    }, 4000);
+  }
+  else if(pat === 'DASH') {
+    // Boss dashes across - safe corner
+    const safeY = Math.random() > 0.5 ? 0 : C.H-80;
+    bs.hazards.push({ type:'DASH_WARN', phase:'WARNING', timer:1000,
+      x:0, y: safeY === 0 ? 80 : 0, w:C.W, h:C.H-80,
+      safeY, color:'rgba(217,56,58,0.3)', dmg:0 });
+    setTimeout(() => {
+      if(bs.ended) return;
+      bs.hazards = bs.hazards.filter(h => h.type !== 'DASH_WARN');
+      bs.hazards.push({ type:'DASH_ACT', phase:'ACTIVE', timer:350,
+        x:0, y: safeY === 0 ? 80 : 0, w:C.W, h:C.H-80,
+        color:'rgba(217,56,58,0.9)', dmg:450 });
+      setTimeout(() => {
+        if(bs.ended) return;
+        bs.hazards = bs.hazards.filter(h => h.type !== 'DASH_ACT');
+        boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+      }, 350);
+    }, 1000);
+  }
+  else if(pat === 'FIRE_BREATH') {
+    // 60% floor coverage
+    bs.hazards.push({ type:'FIRE_WARN', phase:'WARNING', timer:1400,
+      x:0, y:C.H*0.35, w:C.W*0.75, h:C.H*0.65,
+      color:'rgba(217,56,58,0.25)', dmg:0 });
+    setTimeout(() => {
+      if(bs.ended) return;
+      bs.hazards = bs.hazards.filter(h => h.type !== 'FIRE_WARN');
+      bs.hazards.push({ type:'FIRE_ACT', phase:'ACTIVE', timer:2000,
+        x:0, y:C.H*0.35, w:C.W*0.75, h:C.H*0.65,
+        color:'rgba(217,56,58,0.88)', dmg:450 });
+      setTimeout(() => {
+        if(bs.ended) return;
+        bs.hazards = bs.hazards.filter(h => h.type !== 'FIRE_ACT');
+        boss.isWeak = true; boss.weakTimer = 1000; // only 1s!
+        boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+      }, 2000);
+    }, 1400);
+  }
+  else if(pat === 'TAIL_SLAM') {
+    // 3 expanding ring shockwaves
+    [0,1,2].forEach(i => {
+      setTimeout(() => {
+        if(bs.ended) return;
+        bs.effects.push({ type:'RING', x:C.W/2, y:C.H-10, r:20, maxR:C.W, growing:true, timer:1200, dmg:450 });
+      }, i * 350);
+    });
+    setTimeout(() => {
+      if(bs.ended) return;
+      boss.patternPhase = 'WAIT'; boss.phaseTimer = phaseMs;
+    }, 2400);
+  }
+}
+
+function updateProjectiles(dt) {
+  bs.projectiles = bs.projectiles.filter(p => {
+    p.x += p.vx * dt/16;
+    if(p.x > C.W || p.x < 0) return false;
+    // check boss hit
+    if(rectsOverlap(p, bs.boss)) {
+      dealDamageToBoss(p.dmg, p.isWeak);
+      spawnHitEffect(p.x, p.y, p.isWeak);
+      return false;
+    }
+    return true;
+  });
+}
+
+function updateHazards(dt) {
+  const p = bs.player;
+  bs.hazards = bs.hazards.filter(h => {
+    h.timer -= dt;
+    if(h.timer <= 0) return false;
+    // move boss projectiles
+    if(h.vx !== undefined) { h.x += h.vx * dt/16; h.y += h.vy * dt/16; }
+    // tracking orb
+    if(h.tracking) {
+      const dx = p.x - h.x, dy = p.y - h.y;
+      const d = Math.sqrt(dx*dx+dy*dy)||1;
+      h.vx += (dx/d)*0.08; h.vy += (dy/d)*0.08;
+      const spd = Math.sqrt(h.vx*h.vx+h.vy*h.vy);
+      if(spd>3){ h.vx=(h.vx/spd)*3; h.vy=(h.vy/spd)*3; }
+    }
+    // damage check
+    if(h.phase==='ACTIVE' && h.dmg > 0 && !p.isInvincible) {
+      if(rectsOverlap(p,h)) hitPlayer();
+    }
+    return true;
+  });
+}
+
+function updateEffects(dt) {
+  const p = bs.player;
+  bs.effects = bs.effects.filter(e => {
+    if(e.type === 'RING') {
+      e.r += 6 * dt/16;
+      e.timer -= dt;
+      // ring damage check
+      if(!p.isInvincible) {
+        const cx = p.x+p.w/2, cy = p.y+p.h/2;
+        const dist = Math.sqrt((cx-e.x)**2+(cy-e.y)**2);
+        if(dist > e.r-20 && dist < e.r+20) hitPlayer();
+      }
+      return e.timer > 0 && e.r < e.maxR;
+    }
+    if(e.type === 'HIT') { e.timer -= dt; return e.timer > 0; }
+    return false;
+  });
+}
+
+function dealDamageToBoss(dmg, isWeak) {
+  const mult = BOSSES[gs.bossIdx].scoreMultiplier || 1;
+  bs.boss.curHp -= dmg;
+  bs.boss.hitFlash = 200;
+  if(isWeak) {
+    bs.weakHits++;
+    bs.score += Math.floor(500 * mult);
+  }
+  bs.score += Math.floor(dmg * mult);
+  bs.totalDmgDealt += dmg;
+}
+
+function hitPlayer() {
+  const p = bs.player;
+  p.lives--;
+  p.isInvincible = true;
+  p.hitCooldown = C.HIT_COOLDOWN;
+  p.dodgeTimer = 0; p.isDodging = false;
+  bs.score = Math.max(0, bs.score - 300);
+  if(p.lives <= 0) { endBattle(false); }
+}
+
+function checkBossDeath() {
+  if(bs.boss.curHp <= 0 && !bs.ended) endBattle(true);
+}
+
+function endBattle(won) {
+  bs.ended = true;
+  if(!won) {
+    // died — treat as clear with 0 lives
+    bs.player.lives = 0;
+    bs.boss.curHp = 0;
+  }
+  const timeMs = Date.now() - bs.bossStartTime;
+  const timeBonus = Math.max(0, Math.floor((90000 - timeMs)/100));
+  const livesBonus = bs.player.lives * 200;
+  const weakBonus = bs.weakHits * 500;
+  const mult = BOSSES[gs.bossIdx].scoreMultiplier || 1;
+  const bossScore = Math.floor((bs.score + timeBonus + livesBonus + weakBonus) * mult);
+
+  gs.bossResults.push({
+    bossIdx: gs.bossIdx, timeMs,
+    lives: bs.player.lives,
+    weakHits: bs.weakHits,
+    timeBonus, livesBonus, weakBonus,
+    score: bossScore
+  });
+  gs.runScore += bossScore;
+
+  setTimeout(() => showClearScreen(gs.bossIdx, bossScore), 900);
+}
+
+function showClearScreen(idx, bossScore) {
+  const boss = BOSSES[idx];
+  const res = gs.bossResults[gs.bossResults.length-1];
+  document.getElementById('clear-eyebrow').textContent = `BOSS ${idx+1} / 3 CLEARED`;
+  document.getElementById('clear-boss-name').innerHTML = `${boss.name}<br>DEFEATED`;
+  const mm = String(Math.floor(res.timeMs/60000)).padStart(2,'0');
+  const ss = String(Math.floor((res.timeMs%60000)/1000)).padStart(2,'0');
+  document.getElementById('clear-time').textContent = `${mm}:${ss}`;
+  document.getElementById('clear-lives').textContent = `${res.lives} / 3`;
+  document.getElementById('clear-weak').textContent = `${res.weakHits} hits`;
+  document.getElementById('clear-bonus').textContent = `+${res.timeBonus} time / +${res.livesBonus} lives / +${res.weakBonus} weak`;
+  document.getElementById('clear-score').textContent = bossScore.toLocaleString();
+  const nextBtn = document.getElementById('clear-next-btn');
+  if(idx >= BOSSES.length - 1) {
+    nextBtn.textContent = 'VIEW FINAL SCORE →';
+    nextBtn.onclick = showCompleteScreen;
+  } else {
+    nextBtn.textContent = 'NEXT BOSS →';
+    nextBtn.onclick = nextBoss;
+  }
+  showScreen('s-clear');
+}
+
+function nextBoss() {
+  gs.bossIdx++;
+  if(gs.bossIdx >= BOSSES.length) { showCompleteScreen(); return; }
+  showBriefing(gs.bossIdx);
+}
+
+function showCompleteScreen() {
+  const tbody = document.getElementById('complete-breakdown');
+  tbody.innerHTML = gs.bossResults.map((r,i) => {
+    const b = BOSSES[r.bossIdx];
+    return `<tr><td>${b.name}</td><td id="">${r.score.toLocaleString()}</td></tr>`;
+  }).join('') + `<tr><td style="font-size:11px;color:#aaa;font-family:var(--mono)">WEAK HITS TOTAL</td><td style="font-size:11px;font-family:var(--mono)">${gs.bossResults.reduce((s,r)=>s+r.weakHits,0)}</td></tr>`;
+  document.getElementById('complete-total').textContent = gs.runScore.toLocaleString();
+  showScreen('s-complete');
+}
+
+function submitScore() {
+  const name = (document.getElementById('player-name-input').value.trim() || 'ANONYMOUS').toUpperCase().slice(0,12);
+  const lb = getLeaderboard();
+  lb.push({ name, score: gs.runScore, date: new Date().toLocaleDateString() });
+  lb.sort((a,b) => b.score - a.score);
+  const top10 = lb.slice(0,10);
+  localStorage.setItem('bossrush_lb', JSON.stringify(top10));
+  renderLeaderboard();
+  showScreen('s-leaderboard');
+}
+
+// ─── LEADERBOARD ──────────────────────────────────────────────
+function getLeaderboard() {
+  try { return JSON.parse(localStorage.getItem('bossrush_lb')) || []; } catch(e) { return []; }
+}
+function renderLeaderboard() {
+  const lb = getLeaderboard();
+  const el = document.getElementById('lb-body');
+  if(!lb.length) { el.innerHTML='<div class="lb-empty">NO RUNS YET. BE THE FIRST.</div>'; return; }
+  const best = getHighScore();
+  document.getElementById('title-hs').textContent = best > 0 ? best.toLocaleString() : '—';
+  el.innerHTML = lb.map((e,i) => `
+    <div class="lb-row">
+      <div class="lb-rank${i<3?' top3':''}">${String(i+1).padStart(2,'0')}</div>
+      <div class="lb-name">${e.name}</div>
+      <div class="lb-score">${e.score.toLocaleString()}</div>
+      <div class="lb-date">${e.date}</div>
+    </div>
+  `).join('');
+}
+function getHighScore() {
+  const lb = getLeaderboard();
+  return lb.length ? lb[0].score : 0;
+}
+function clearLeaderboard() {
+  if(confirm('Clear all scores?')) { localStorage.removeItem('bossrush_lb'); renderLeaderboard(); }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+function render() {
+  ctx.clearRect(0,0,C.W,C.H);
+  ctx.fillStyle = '#FDFBF7';
+  ctx.fillRect(0,0,C.W,C.H);
+
+  // divider line
+  ctx.strokeStyle = '#0C0C0C';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(C.W/2-10, 0); ctx.lineTo(C.W/2-10, C.H); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // render hazards (warnings)
+  bs.hazards.filter(h=>h.phase==='WARNING').forEach(h => {
+    ctx.fillStyle = h.color;
+    if(h.type==='CURSE_ORB'||h.type==='PROJ_BOSS'){
+      drawCircle(h.x, h.y, h.w/2, h.color);
+    } else {
+      ctx.fillRect(h.x,h.y,h.w,h.h);
+    }
+    // warning text
+    ctx.fillStyle = 'rgba(217,56,58,0.9)';
+    ctx.font = 'bold 11px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    if(h.type!=='CURSE_ORB'&&h.type!=='PROJ_BOSS'){
+      ctx.fillText('⚠ INCOMING', h.x + h.w/2, h.y + h.h/2 + 4);
+    }
+    ctx.textAlign = 'left';
+  });
+
+  // render hazards (active)
+  bs.hazards.filter(h=>h.phase==='ACTIVE').forEach(h => {
+    if(h.type==='CURSE_ORB'||h.type==='PROJ_BOSS'){
+      drawCircle(h.x, h.y, h.w/2, h.color);
+    } else {
+      ctx.fillStyle = h.color;
+      ctx.fillRect(h.x,h.y,h.w,h.h);
+    }
+  });
+
+  // ring effects
+  bs.effects.filter(e=>e.type==='RING').forEach(e => {
+    ctx.beginPath();
+    ctx.arc(e.x,e.y,e.r,0,Math.PI*2);
+    ctx.strokeStyle = 'rgba(217,56,58,0.7)';
+    ctx.lineWidth = 8;
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  });
+
+  // dodge trail
+  bs.player.dodgeTrail.forEach(t => {
+    ctx.fillStyle = `rgba(217,56,58,${t.a})`;
+    ctx.fillRect(t.x, t.y, bs.player.w, bs.player.h);
+  });
+
+  // player
+  const p = bs.player;
+  const blinkVisible = p.hitCooldown > 0 ? (Math.floor(p.hitCooldown/120) % 2 === 0) : true;
+  if(blinkVisible) {
+    ctx.fillStyle = p.isDodging ? 'rgba(12,12,12,0.4)' : '#0C0C0C';
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    // player accent stripe
+    ctx.fillStyle = '#D9383A';
+    ctx.fillRect(p.x, p.y, 5, p.h);
+    // dodge indicator
+    if(p.isDodging) {
+      ctx.fillStyle = '#FDFBF7';
+      ctx.font = '9px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('ROLL', p.x+p.w/2, p.y+p.h/2+3);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // player projectiles
+  bs.projectiles.forEach(pr => {
+    ctx.fillStyle = pr.isWeak ? '#D9383A' : '#0C0C0C';
+    ctx.fillRect(pr.x, pr.y, pr.w, pr.h);
+    if(pr.isWeak) {
+      ctx.fillStyle = 'rgba(217,56,58,0.4)';
+      ctx.fillRect(pr.x-4, pr.y-3, pr.w+8, pr.h+6);
+    }
+  });
+
+  // boss
+  const boss = bs.boss;
+  const isFlashing = boss.hitFlash > 0;
+  ctx.fillStyle = isFlashing ? '#D9383A' : boss.color;
+  ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+
+  // weak point glow
+  if(boss.isWeak) {
+    const t = Date.now();
+    const pulse = 0.3 + 0.25*Math.sin(t/120);
+    ctx.fillStyle = `rgba(217,56,58,${pulse})`;
+    ctx.fillRect(boss.x-8, boss.y-8, boss.w+16, boss.h+16);
+    ctx.strokeStyle = '#D9383A';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(boss.x, boss.y, boss.w, boss.h);
+    ctx.lineWidth = 1;
+    // weak label
+    ctx.fillStyle = '#D9383A';
+    ctx.font = 'bold 10px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚡WEAK', boss.x+boss.w/2, boss.y-12);
+    ctx.textAlign = 'left';
+  }
+
+  // boss name label
+  ctx.fillStyle = '#FDFBF7';
+  ctx.font = 'bold 12px Playfair Display, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(boss.name, boss.x+boss.w/2, boss.y+boss.h/2+5);
+  ctx.textAlign = 'left';
+
+  // hp bar inside boss
+  const hpW = Math.max(0, (boss.curHp/boss.hp)*boss.w);
+  ctx.fillStyle = 'rgba(253,251,247,0.15)';
+  ctx.fillRect(boss.x, boss.y+boss.h-10, boss.w, 10);
+  ctx.fillStyle = '#D9383A';
+  ctx.fillRect(boss.x, boss.y+boss.h-10, hpW, 10);
+
+  // hit effects
+  bs.effects.filter(e=>e.type==='HIT').forEach(e => {
+    ctx.fillStyle = `rgba(217,56,58,${e.timer/300})`;
+    ctx.beginPath(); ctx.arc(e.x,e.y,20*(1-e.timer/300)+5,0,Math.PI*2); ctx.fill();
+  });
+
+  // dead state
+  if(bs.ended && bs.player.lives <= 0) {
+    ctx.fillStyle = 'rgba(253,251,247,0.85)';
+    ctx.fillRect(0,0,C.W,C.H);
+    ctx.fillStyle = '#D9383A';
+    ctx.font = 'bold 48px Playfair Display, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('YOU DIED', C.W/2, C.H/2);
+    ctx.fillStyle = '#0C0C0C';
+    ctx.font = '14px JetBrains Mono, monospace';
+    ctx.fillText('loading results...', C.W/2, C.H/2+32);
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawCircle(x,y,r,color) {
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle=color; ctx.fill();
+}
+
+function spawnHitEffect(x,y,isWeak) {
+  bs.effects.push({ type:'HIT', x, y, timer: isWeak?400:200 });
+}
+
+function rectsOverlap(a,b) {
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+renderLeaderboard();
+setupTouchControls();
+document.getElementById('title-hs').textContent = getHighScore() > 0 ? getHighScore().toLocaleString() : '—';
+</script>
+</body>
+</html>
