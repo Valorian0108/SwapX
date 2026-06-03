@@ -1008,8 +1008,9 @@ function render() {
 
   // hit effects
   bs.effects.filter(e=>e.type==='HIT').forEach(e => {
-    ctx.fillStyle = `rgba(217,56,58,${e.timer/300})`;
-    ctx.beginPath(); ctx.arc(e.x,e.y,20*(1-e.timer/300)+5,0,Math.PI*2); ctx.fill();
+    const pct = e.timer / e.maxTimer; // 1→0 as effect fades
+    ctx.fillStyle = `rgba(217,56,58,${pct.toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(1, 20*(1-pct)+5), 0, Math.PI*2); ctx.fill();
   });
 
   // dead state
@@ -1033,7 +1034,8 @@ function drawCircle(x,y,r,color) {
 }
 
 function spawnHitEffect(x,y,isWeak) {
-  bs.effects.push({ type:'HIT', x, y, timer: isWeak?400:200 });
+  const t = isWeak ? 400 : 200;
+  bs.effects.push({ type:'HIT', x, y, timer: t, maxTimer: t });
 }
 
 function rectsOverlap(a,b) {
