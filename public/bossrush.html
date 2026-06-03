@@ -336,6 +336,7 @@ function initBattleState(bossIdx) {
     ended: false,
     endTimer: 0,
     totalDmgDealt: 0,
+    shake: { dur: 0, intensity: 0 },
   };
   keys = {};
   touchKeys = {};
@@ -498,6 +499,7 @@ function gameLoop(ts) {
 
 // ─── UPDATE ───────────────────────────────────────────────────
 function update(dt) {
+  if(bs.shake && bs.shake.dur > 0) bs.shake.dur = Math.max(0, bs.shake.dur - dt);
   updatePlayer(dt);
   updateBoss(dt);
   updateProjectiles(dt);
@@ -772,6 +774,7 @@ function hitPlayer() {
   p.hitCooldown = C.HIT_COOLDOWN;
   p.dodgeTimer = 0; p.isDodging = false;
   bs.score = Math.max(0, bs.score - 300);
+  bs.shake = { dur: 350, intensity: p.lives > 0 ? 9 : 14 };
   if(p.lives <= 0) { endBattle(false); }
 }
 
@@ -884,9 +887,17 @@ function clearLeaderboard() {
 
 // ─── RENDER ───────────────────────────────────────────────────
 function render() {
-  ctx.clearRect(0,0,C.W,C.H);
+  ctx.save();
+  if(bs.shake && bs.shake.dur > 0) {
+    const mag = bs.shake.intensity * (bs.shake.dur / 350);
+    ctx.translate(
+      (Math.random()*2-1)*mag,
+      (Math.random()*2-1)*mag
+    );
+  }
+  ctx.clearRect(-20,-20,C.W+40,C.H+40);
   ctx.fillStyle = '#FDFBF7';
-  ctx.fillRect(0,0,C.W,C.H);
+  ctx.fillRect(-20,-20,C.W+40,C.H+40);
 
   // divider line
   ctx.strokeStyle = '#0C0C0C';
@@ -1026,6 +1037,8 @@ function render() {
     ctx.fillText('loading results...', C.W/2, C.H/2+32);
     ctx.textAlign = 'left';
   }
+
+  ctx.restore();
 }
 
 function drawCircle(x,y,r,color) {
